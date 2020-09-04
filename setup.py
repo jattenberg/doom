@@ -13,7 +13,6 @@ required_libraries = [
     "openai",
     "twilio",
     "flask",
-    "python-dotenv",
     "pyngrok",
 ]
 
