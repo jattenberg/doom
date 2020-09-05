@@ -1,12 +1,12 @@
 from setuptools import setup
 
 required_libraries = [
-    "beautifulsoup4",
+    "lyricsgenius",
+    "beautifulsoup4==4.6.0",
     "faker",
     "jupyter",
     "matplotlib",
     "pandas",
-    "pymc3==3.9.3",
     "requests",
     "seaborn",
     "scikit-learn",
@@ -14,6 +14,10 @@ required_libraries = [
     "twilio",
     "flask",
     "pyngrok",
+    "keras",
+    "tensorflow",
+    "scipy==1.4.1",
+    "numpy==1.18.5",
 ]
 
 setup(
