@@ -8,6 +8,7 @@ required_libraries = [
     "matplotlib",
     "pandas",
     "requests",
+    "lxml",
     "seaborn",
     "scikit-learn",
     "openai",
@@ -18,6 +19,7 @@ required_libraries = [
     "tensorflow",
     "scipy==1.4.1",
     "numpy==1.18.5",
+    "selenium",
 ]
 
 setup(
