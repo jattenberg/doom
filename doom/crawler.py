@@ -1,3 +1,4 @@
+import sys
 import os
 import re
 import string
@@ -83,13 +84,19 @@ def fetch_letter(
         max_page=1000):
 
     pages = []
+    total = 0
     for page in range(max_page):
         logging.debug("letter: %s, page: %d" % (letter, page))
         new_pages = fetch_letter_page(letter, page+1, base_url)
+        
+        links = len(new_pages)
+        total = total + links
+        logging.debug("page %s, got %d new links, %d total" %
+                      (letter, links, total))
 
-        if len(new_pages):
+        if links < 1:
             logging.info("got up to page %d for letter %s" %
-                         (letter, page))
+                         (page, letter))
             break
 
         pages = pages + new_pages
@@ -113,7 +120,7 @@ def fetch_letter_page(
             "name": li.text.strip().encode('utf-8')
         } for li in 
         soup.find('ul', {'class': "artists_index_list"})
-        if type(li) is Tag and li.find(li)]
+        if type(li) is Tag]
 
 def fetch_all_artists(
         base_url="https://genius.com/artists-index/%s/all?page=%d",
@@ -127,3 +134,15 @@ def fetch_all():
     
     """
     pass
+
+def main():
+    logging.basicConfig(
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        stream=sys.stdout,
+        level="DEBUG",
+    )
+
+    letter_as = fetch_letter('a')
+
+if __name__ == "__main__":
+    main()
