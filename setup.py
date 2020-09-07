@@ -20,6 +20,7 @@ required_libraries = [
     "scipy==1.4.1",
     "numpy==1.18.5",
     "selenium",
+    "orjson==3.3.1",
 ]
 
 setup(

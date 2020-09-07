@@ -7,24 +7,36 @@ import functools
 import logging
 import time
 import warnings
+import orjson
+import pandas as pd
 
 from selenium import webdriver
 from bs4.element import Tag
 from bs4 import BeautifulSoup
 
 class Artist():
-    def __init__(self, name, url):
+    def __init__(self, name, url, songs=[]):
         self.name = name
         self.url = url
+        self.songs = songs
 
-def get_with_phantom(url, attempt=0, attempts=5):
-    driv
+    def get_songs(self):
+        return self.songs
+
+    def fetch_songs(self):
+        return self
 
 def get_and_scroll(url,
                    attempt=0,
                    attempts=5,
                    implicit_wait=30,
                    scroll_pause_time=3.5):
+    """
+    crawl the specified url and try to continually scroll
+    to the bottom of the page in order to reveal any 
+    'infinite scroll' elements
+    """
+
     warnings.filterwarnings('ignore')
     # this throws a warning which i'm just ignoring for now
     driver = webdriver.PhantomJS()
@@ -72,10 +84,12 @@ def fetch_all_letters(
         letters=string.ascii_lowercase):
 
     artist_list = functools.reduce(
-        lambda acc, letter: acc + fetch_letter(letter, base_url),
-        letters,
+        lambda acc, x: acc + x,
+        [fetch_letter(letter, base_url) for letter in letters],
         [])
 
+    logging.info(">>>fetched all artists! %d total<<<"
+                 % len(artist_list))
     return artist_list
 
 def fetch_letter(
@@ -117,7 +131,7 @@ def fetch_letter_page(
     return [
         {
             "url": li.a['href'],
-            "name": li.text.strip().encode('utf-8')
+            "name": li.text.strip() # need to utf-8 encode to read
         } for li in 
         soup.find('ul', {'class': "artists_index_list"})
         if type(li) is Tag]
@@ -129,10 +143,19 @@ def fetch_all_artists(
     artists_data = fetch_all_letters(base_url, letters)
     return [Artist(**artist) for artist in artists_data]
 
-def fetch_all():
-    """
-    
-    """
+def fetch_songs_for_artist(artist):
+    logging.debug("getting songs for %s" % artist.name)
+
+    start = time.time()
+    artist.fetch_songs()
+    end = time.time()
+
+    logging.debug("found %d songs for %s, took %0.1f"
+                  % (artist.name,
+                     len(artist.get_songs()),
+                     end-start))
+
+def fetch_songs_for_artists(artists):
     pass
 
 def main():
@@ -142,7 +165,18 @@ def main():
         level="DEBUG",
     )
 
-    letter_as = fetch_letter('a')
+    base_dir = "./data"
+    all_artists = fetch_all_letters()
+    
+    
+    filename = "%s/%s" % (base_dir, "all_artists.json")
+    logging.info("writing %d artists to %s"
+                 % (len(all_artists), filename))
+
+    with open(filename, "wb") as f:
+        f.write(orjson.dumps(all_artists))
+
+    logging.info("done!")
 
 if __name__ == "__main__":
     main()
