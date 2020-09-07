@@ -21,6 +21,7 @@ required_libraries = [
     "numpy==1.18.5",
     "selenium",
     "orjson==3.3.1",
+    "multiprocessing",
 ]
 
 setup(

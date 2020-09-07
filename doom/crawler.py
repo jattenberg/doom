@@ -8,6 +8,7 @@ import logging
 import time
 import warnings
 import orjson
+import multiprocessing as mp
 import pandas as pd
 
 from selenium import webdriver
@@ -81,11 +82,14 @@ def fetch_with_retries(url, attempt=0, attempts=5):
 
 def fetch_all_letters(
         base_url="https://genius.com/artists-index/%s/all?page=%d",
-        letters=string.ascii_lowercase):
+        letters=string.ascii_lowercase,
+        processes=-1):
+
+    pool = mp.Pool(processes if processes > 0 else mp.cpu_count())
 
     artist_list = functools.reduce(
         lambda acc, x: acc + x,
-        [fetch_letter(letter, base_url) for letter in letters],
+        pool.map(fetch_letter, [l for l in letters]),
         [])
 
     logging.info(">>>fetched all artists! %d total<<<"
