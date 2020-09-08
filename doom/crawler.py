@@ -9,22 +9,27 @@ import time
 import warnings
 import orjson
 import multiprocessing as mp
+import lyricsgenius as genius
 import pandas as pd
 
 from selenium import webdriver
 from bs4.element import Tag
 from bs4 import BeautifulSoup
 
+genius = genius.Genius(os.environ.get("GENIUS_ACCESS_TOKEN"))
+
 class Artist():
     def __init__(self, name, url, songs=[]):
         self.name = name
         self.url = url
         self.songs = songs
+        self.artist = None
 
     def get_songs(self):
-        return self.songs
+        return self.artist.songs()
 
     def fetch_songs(self):
+        self.artist = genius.search_artist(self.name)
         return self
 
 def get_and_scroll(url,
