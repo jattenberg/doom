@@ -8,16 +8,19 @@ import logging
 import time
 import warnings
 import orjson
+import boto3
+
 import multiprocessing as mp
 import lyricsgenius as genius
 import pandas as pd
-
 from selenium import webdriver
 from bs4.element import Tag
 from bs4 import BeautifulSoup
 
 genius = genius.Genius(os.environ.get("GENIUS_ACCESS_TOKEN"))
 pattern = re.compile("api_path.*?/artists/(\d+)")
+s3_client = boto3.client('s3')
+lyrics_root = "genius-lyrics"
 
 class Artist():
     def __init__(self, name, url, songs=[]):
@@ -28,19 +31,28 @@ class Artist():
 
     def get_artist_id(self):
         html = fetch_with_retries(self.url)
-        print (html)
-        self.artist_id = pattern.match(html).groups()[0]
-        logging.debug("got id: %d for artist %s" %
+        self.artist_id = pattern.findall(html)[0]
+
+        logging.debug("got id: %s for artist %s" %
                       (self.artist_id, self.name))
         return self
 
     def get_songs(self):
         return self.songs
 
-    def fetch_songs(self):
-        self.artist = genius.search_artist(self.name,
-                                           allow_name_change=False)
-        return self
+    def fetch_songs(self, attempt=0, attempts=5):
+        try: 
+            self.artist = genius.search_artist(self.name,
+                                               allow_name_change=False,
+                                               artist_id=self.artist_id)
+            return self
+        except Exception as e:
+            if attempt < attempts:
+                logging.info("retrying, on attept %d" % (attempt+1))
+                return self.fetch_songs(attepmt+1)
+            else:
+                logging.error("unable to fetch %s, error: %s" % (url, e))
+        
 
 def get_and_scroll(url,
                    attempt=0,
@@ -212,23 +224,31 @@ def main():
 
     pool = mp.Pool(100)
 
-    logging.info("fetching artist data")    
-
+    logging.info("fetching artist ids")    
     out = pool.map(_get_ids, artists[:10])
     logging.info("done")
-    print (out)
 
-    """
+    logging.info("making s3 buckets for all letters")
+    for letter in string.ascii_lowercase:
+        s3_client.create_bucket("%s/%s" % (lyrics_root, letter))
+
+    logging.info("fetching artst songs")
+    with_songs = pool.map(_get_songs, out)
+    logging.info("done")
+
+    
+
     filename = "%s/%s" % (base_dir, "a_artist_songs.json")
 
     logging.info("writing %d artists to %s"
                  % (len(out), filename))
 
+    
     with open(filename, "wb") as f:
         f.write(orjson.dumps(out))
 
     logging.info("done!")
-    """
+
 
 if __name__ == "__main__":
     main()
