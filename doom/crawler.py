@@ -53,6 +53,14 @@ class Artist():
                 return self.fetch_songs(attepmt+1)
             else:
                 logging.error("unable to fetch %s, error: %s" % (url, e))
+
+    def to_dict(self):
+        return {
+            "name": self.name,
+            "url": self.url,
+            "songs": self.songs,
+            "artist_id": self.artist_id
+        }
         
 
 def get_and_scroll(url,
@@ -194,16 +202,22 @@ def fetch_songs_for_artists(artists):
 
 def _get_and_save_songs(a):
     if not a.artist_id:
+        logging.info("artist id, not present for %s, fetching" %
+                     a.name)
         a.get_artist_id()
 
     a.fetch_songs() # get songs for the artist
-    json = orjson.dumps(a)
+    logging.debug("fetched %d songs for %s" %
+                  (len(a.songs), a.name))
+    json = orjson.dumps(a.to_dict())
     
+    logging.debug("writing %s songs to s3" % a.name)
     s3_client.put_object(
         Body=json,
-        Bucket="%s/%s/%s" % (lyrics_root,
-                             a.name[0].lower(),
-                             "%s.json" % a.name))
+        Bucket=lyrics_root,
+        Key= "%s/%s" % (a.name[0].lower(),
+                        "%s.json" % a.name))
+    logging.debug("done with %s" % a.name)
 
     # free up space?
     a.songs = None
@@ -212,33 +226,26 @@ def _get_ids(a):
     return a.get_artist_id()
 
 def main():
-    logging.basicConfig(
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-        stream=sys.stdout,
-        level="DEBUG",
-    )
+    logFormatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s")
+    rootLogger = logging.getLogger()
+
+    fileHandler = logging.FileHandler("doom.cralwer.log") 
+    fileHandler.setFormatter(logFormatter)
+    rootLogger.addHandler(fileHandler)
+
+    consoleHandler = logging.StreamHandler()
+    consoleHandler.setFormatter(logFormatter)
+    rootLogger.addHandler(consoleHandler)
 
     base_dir = "./data"
 
-    """
-
-    
-    
-    filename = "%s/%s" % (base_dir, "all_artists.json")
-    logging.info("writing %d artists to %s"
-                 % (len(all_artists), filename))
-
-    with open(filename, "wb") as f:
-        f.write(orjson.dumps(all_artists))
-    """
-
-
+    logging.info("finding all artists")
     artists = fetch_all_artists()
+    logging.info("done. got %d" % len(artists))
 
     pool = mp.Pool(100)
-
     logging.info("getting songs and saving to s3")    
-    pool.map(fetch_songs_for_artists, artists[:10])
+    pool.map(_get_and_save_songs, artists)
     logging.info("done")
 
 
