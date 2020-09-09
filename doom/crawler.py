@@ -94,7 +94,7 @@ def fetch_all_letters(
 
     artist_list = functools.reduce(
         lambda acc, x: acc + x,
-        pool.map(fetch_letter, [l for l in letters]),
+        pool.map(fetch_letter, letters),
         [])
 
     logging.info(">>>fetched all artists! %d total<<<"
@@ -167,6 +167,10 @@ def fetch_songs_for_artist(artist):
 def fetch_songs_for_artists(artists):
     pass
 
+def _get_songs(a):
+    return a.fetch_songs()
+
+
 def main():
     logging.basicConfig(
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -175,6 +179,8 @@ def main():
     )
 
     base_dir = "./data"
+
+    """
     all_artists = fetch_all_letters()
     
     
@@ -184,6 +190,26 @@ def main():
 
     with open(filename, "wb") as f:
         f.write(orjson.dumps(all_artists))
+    """
+
+    a_artists = fetch_letter('x')
+    artists = [Artist(**a) for a in a_artists]
+
+    pool = mp.Pool(100)
+
+    logging.info("fetching artist data")    
+
+    out = pool.map(_get_songs, artists[:10])
+    logging.info("done")
+    print (out)
+
+    filename = "%s/%s" % (base_dir, "a_artist_songs.json")
+
+    logging.info("writing %d artists to %s"
+                 % (len(out), filename))
+
+    with open(filename, "wb") as f:
+        f.write(orjson.dumps(out))
 
     logging.info("done!")
 
