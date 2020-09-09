@@ -42,9 +42,10 @@ class Artist():
 
     def fetch_songs(self, attempt=0, attempts=5):
         try: 
-            self.artist = genius.search_artist(self.name,
-                                               allow_name_change=False,
-                                               artist_id=self.artist_id)
+            artist = genius.search_artist(self.name,
+                                          allow_name_change=False,
+                                          artist_id=self.artist_id)
+            self.songs = [s.to_dict() for s in artist.songs]
             return self
         except Exception as e:
             if attempt < attempts:
@@ -191,9 +192,21 @@ def fetch_songs_for_artist(artist):
 def fetch_songs_for_artists(artists):
     pass
 
-def _get_songs(a):
-    return a.fetch_songs()
+def _get_and_save_songs(a):
+    if not a.artist_id:
+        a.get_artist_id()
 
+    a.fetch_songs() # get songs for the artist
+    json = orjson.dumps(a)
+    
+    s3_client.put_object(
+        Body=json,
+        Bucket="%s/%s/%s" % (lyrics_root,
+                             a.name[0].lower(),
+                             "%s.json" % a.name))
+
+    # free up space?
+    a.songs = None
 
 def _get_ids(a):
     return a.get_artist_id()
@@ -208,7 +221,7 @@ def main():
     base_dir = "./data"
 
     """
-    all_artists = fetch_all_letters()
+
     
     
     filename = "%s/%s" % (base_dir, "all_artists.json")
@@ -219,35 +232,14 @@ def main():
         f.write(orjson.dumps(all_artists))
     """
 
-    a_artists = fetch_letter('x')
-    artists = [Artist(**a) for a in a_artists]
+
+    artists = fetch_all_artists()
 
     pool = mp.Pool(100)
 
-    logging.info("fetching artist ids")    
-    out = pool.map(_get_ids, artists[:10])
+    logging.info("getting songs and saving to s3")    
+    pool.map(fetch_songs_for_artists, artists[:10])
     logging.info("done")
-
-    logging.info("making s3 buckets for all letters")
-    for letter in string.ascii_lowercase:
-        s3_client.create_bucket("%s/%s" % (lyrics_root, letter))
-
-    logging.info("fetching artst songs")
-    with_songs = pool.map(_get_songs, out)
-    logging.info("done")
-
-    
-
-    filename = "%s/%s" % (base_dir, "a_artist_songs.json")
-
-    logging.info("writing %d artists to %s"
-                 % (len(out), filename))
-
-    
-    with open(filename, "wb") as f:
-        f.write(orjson.dumps(out))
-
-    logging.info("done!")
 
 
 if __name__ == "__main__":
