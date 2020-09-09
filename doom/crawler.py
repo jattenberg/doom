@@ -17,19 +17,29 @@ from bs4.element import Tag
 from bs4 import BeautifulSoup
 
 genius = genius.Genius(os.environ.get("GENIUS_ACCESS_TOKEN"))
+pattern = re.compile("api_path.*?/artists/(\d+)")
 
 class Artist():
     def __init__(self, name, url, songs=[]):
         self.name = name
         self.url = url
         self.songs = songs
-        self.artist = None
+        self.artist_id = None
+
+    def get_artist_id(self):
+        html = fetch_with_retries(self.url)
+        print (html)
+        self.artist_id = pattern.match(html).groups()[0]
+        logging.debug("got id: %d for artist %s" %
+                      (self.artist_id, self.name))
+        return self
 
     def get_songs(self):
-        return self.artist.songs()
+        return self.songs
 
     def fetch_songs(self):
-        self.artist = genius.search_artist(self.name)
+        self.artist = genius.search_artist(self.name,
+                                           allow_name_change=False)
         return self
 
 def get_and_scroll(url,
@@ -67,7 +77,7 @@ def get_and_scroll(url,
     except Exception as e:
         if attempt < attempts:
             logging.info("retrying, on attept %d" % (attempt+1))
-            return fetch_with_retries(url, attempt+1)
+            return get_and_scroll(url, attempt+1)
         else:
             logging.error("unable to fetch %s, error: %s" % (url, e))
     finally:
@@ -164,12 +174,17 @@ def fetch_songs_for_artist(artist):
                      len(artist.get_songs()),
                      end-start))
 
+    return artist
+
 def fetch_songs_for_artists(artists):
     pass
 
 def _get_songs(a):
     return a.fetch_songs()
 
+
+def _get_ids(a):
+    return a.get_artist_id()
 
 def main():
     logging.basicConfig(
@@ -199,10 +214,11 @@ def main():
 
     logging.info("fetching artist data")    
 
-    out = pool.map(_get_songs, artists[:10])
+    out = pool.map(_get_ids, artists[:10])
     logging.info("done")
     print (out)
 
+    """
     filename = "%s/%s" % (base_dir, "a_artist_songs.json")
 
     logging.info("writing %d artists to %s"
@@ -212,6 +228,7 @@ def main():
         f.write(orjson.dumps(out))
 
     logging.info("done!")
+    """
 
 if __name__ == "__main__":
     main()
