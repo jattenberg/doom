@@ -10,10 +10,12 @@ import warnings
 import orjson
 import boto3
 
+
 import lyricsgenius as genius
 import multiprocessing as mp
 import pandas as pd
 
+from optparse import OptionParser
 from selenium import webdriver
 from bs4.element import Tag
 from bs4 import BeautifulSoup
@@ -237,7 +239,7 @@ def logger_init():
     # https://stackoverflow.com/questions/641420/how-should-i-log-while-using-multiprocessing-in-python
     q = mp.Queue()
     # this is the handler for all log records
-    handler = logging.StreamHandler()
+    handler = logging.StreamHandler(stream=sys.stdout)
     handler.setFormatter(
         logging.Formatter("%(levelname)s: %(asctime)s - %(process)s - %(message)s")
     )
@@ -260,16 +262,44 @@ def worker_init(q):
     logger.setLevel(logging.DEBUG)
     logger.addHandler(qh)
 
+def get_optparser():
+    parser = OptionParser(usage="crawl artist and lyrics data from genius.com and store the results to amazon s3")
+    parser.add_option("-p",
+                      "--pool",
+                      action="store",
+                      dest="pool",
+                      default=10,
+                      help="size of pool of workers for parallel crawling")
+    parser.add_option("-l",
+                      "--letter",
+                      action="store",
+                      dest="letter",
+                      default=None,
+                      help="(optional) individual artist letter to get")
+
+    return parser
+
 def main():
+    opt_parser = get_optparser()
+    (options, args) = opt_parser.parse_args()
+
     q_listener, q = logger_init()
 
     base_dir = "./data"
 
-    logging.info("finding all artists")
-    artists = [Artist(**a) for a in fetch_letter('x')] #fetch_all_artists()
+
+    if options.letter:
+        logging.info("getting %s artists" % options.letter)
+        artists = [Artist(**a) for a in fetch_letter(options.letter)]
+    else:
+        logging.info("finding all artists")
+        artists = fetch_all_artists()
+
     logging.info("done. got %d" % len(artists))
 
-    pool = mp.Pool(100, worker_init, [q])
+    pool = mp.Pool(int(options.pool),
+                   worker_init,
+                   [q])
     logging.info("getting songs and saving to s3")    
     pool.map(_get_and_save_songs, artists)
     logging.info("done")
