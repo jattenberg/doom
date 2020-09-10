@@ -10,14 +10,18 @@ import warnings
 import orjson
 import boto3
 
-import multiprocessing as mp
 import lyricsgenius as genius
+import multiprocessing as mp
 import pandas as pd
 from selenium import webdriver
 from bs4.element import Tag
 from bs4 import BeautifulSoup
 
-genius = genius.Genius(os.environ.get("GENIUS_ACCESS_TOKEN"))
+genius = genius.Genius(
+    os.environ.get("GENIUS_ACCESS_TOKEN"),
+    timeout=10,
+    sleep_time=1
+)
 pattern = re.compile("api_path.*?/artists/(\d+)")
 s3_client = boto3.client('s3')
 lyrics_root = "genius-lyrics"
@@ -49,8 +53,8 @@ class Artist():
             return self
         except Exception as e:
             if attempt < attempts:
-                logging.info("retrying, on attept %d" % (attempt+1))
-                return self.fetch_songs(attepmt+1)
+                logging.info("retrying, on attempt %d" % (attempt+1))
+                return self.fetch_songs(attempt+1)
             else:
                 logging.error("unable to fetch %s, error: %s" % (url, e))
 
@@ -228,7 +232,7 @@ def _get_ids(a):
 def main():
     logging.basicConfig(
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-        filename=sys.stdout,
+        filename="doom.crawler.log",
         level="DEBUG",
     )
 
