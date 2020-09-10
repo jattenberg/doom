@@ -13,9 +13,11 @@ import boto3
 import lyricsgenius as genius
 import multiprocessing as mp
 import pandas as pd
+
 from selenium import webdriver
 from bs4.element import Tag
 from bs4 import BeautifulSoup
+from logging.handlers import QueueHandler, QueueListener
 
 genius = genius.Genius(
     os.environ.get("GENIUS_ACCESS_TOKEN"),
@@ -229,12 +231,35 @@ def _get_and_save_songs(a):
 def _get_ids(a):
     return a.get_artist_id()
 
-def main():
-    logging.basicConfig(
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-        filename="doom.crawler.log",
-        level="DEBUG",
+def logger_init():
+    # https://stackoverflow.com/questions/641420/how-should-i-log-while-using-multiprocessing-in-python
+    q = mp.Queue()
+    # this is the handler for all log records
+    handler = logging.StreamHandler()
+    handler.setFormatter(
+        logging.Formatter("%(levelname)s: %(asctime)s - %(process)s - %(message)s")
     )
+
+    # ql gets records from the queue and sends them to the handler
+    ql = QueueListener(q, handler)
+    ql.start()
+
+    logger = logging.getLogger()
+    logger.setLevel(logging.DEBUG)
+    # add the handler to the logger so records from this process are handled
+    logger.addHandler(handler)
+
+    return ql, q
+
+def worker_init(q):
+    # all records from worker processes go to qh and then into q
+    qh = QueueHandler(q)
+    logger = logging.getLogger()
+    logger.setLevel(logging.DEBUG)
+    logger.addHandler(qh)
+
+def main():
+    q_listener, q = logger_init()
 
     base_dir = "./data"
 
@@ -242,10 +267,14 @@ def main():
     artists = fetch_all_artists()
     logging.info("done. got %d" % len(artists))
 
-    pool = mp.Pool(100)
+    pool = mp.Pool(100, worker_init, [q])
     logging.info("getting songs and saving to s3")    
     pool.map(_get_and_save_songs, artists)
     logging.info("done")
+
+    pool.close()
+    pool.join()
+    q_listener.stop()
 
 
 if __name__ == "__main__":
