@@ -226,16 +226,11 @@ def _get_ids(a):
     return a.get_artist_id()
 
 def main():
-    logFormatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s")
-    rootLogger = logging.getLogger()
-
-    fileHandler = logging.FileHandler("doom.cralwer.log") 
-    fileHandler.setFormatter(logFormatter)
-    rootLogger.addHandler(fileHandler)
-
-    consoleHandler = logging.StreamHandler()
-    consoleHandler.setFormatter(logFormatter)
-    rootLogger.addHandler(consoleHandler)
+    logging.basicConfig(
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        filename=sys.stdout,
+        level="DEBUG",
+    )
 
     base_dir = "./data"
 
