@@ -58,7 +58,9 @@ class Artist():
                 logging.info("retrying, on attempt %d" % (attempt+1))
                 return self.fetch_songs(attempt+1)
             else:
-                logging.error("unable to fetch %s, error: %s" % (url, e))
+                logging.error("unable to fetch %s, error: %s" %
+                              (self.name, e))
+                raise e
 
     def to_dict(self):
         return {
@@ -264,7 +266,7 @@ def main():
     base_dir = "./data"
 
     logging.info("finding all artists")
-    artists = fetch_all_artists()
+    artists = [Artist(**a) for a in fetch_letter('x')] #fetch_all_artists()
     logging.info("done. got %d" % len(artists))
 
     pool = mp.Pool(100, worker_init, [q])
