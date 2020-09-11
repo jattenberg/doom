@@ -274,7 +274,7 @@ def get_optparser():
                       "--pool",
                       action="store",
                       dest="pool",
-                      default=10,
+                      default=2*mp.cpu_count(),
                       help="size of pool of workers for parallel crawling")
     parser.add_option("-l",
                       "--letter",
