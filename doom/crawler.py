@@ -10,7 +10,6 @@ import warnings
 import orjson
 import boto3
 
-
 import lyricsgenius as genius
 import multiprocessing as mp
 import pandas as pd
@@ -129,9 +128,11 @@ def fetch_with_retries(url, attempt=0, attempts=5):
 def fetch_all_letters(
         base_url="https://genius.com/artists-index/%s/all?page=%d",
         letters=string.ascii_lowercase,
-        processes=-1):
+        processes=-1,
+        pool=None):
 
-    pool = mp.Pool(processes if processes > 0 else mp.cpu_count())
+    num_processes = processes if processes > 0 else mp.cpu_count()
+    pool = pool if pool else mp.Pool(num_processes)
 
     artist_list = functools.reduce(
         lambda acc, x: acc + x,
@@ -188,9 +189,14 @@ def fetch_letter_page(
 
 def fetch_all_artists(
         base_url="https://genius.com/artists-index/%s/all?page=%d",
-        letters=string.ascii_lowercase):
+        letters=string.ascii_lowercase,
+        processes=-1,
+        pool=None):
     
-    artists_data = fetch_all_letters(base_url, letters)
+    artists_data = fetch_all_letters(base_url,
+                                     letters,
+                                     processes,
+                                     pool)
     return [Artist(**artist) for artist in artists_data]
 
 def fetch_songs_for_artist(artist):
@@ -287,19 +293,19 @@ def main():
 
     base_dir = "./data"
 
+    pool = mp.Pool(int(options.pool),
+                   worker_init,
+                   [q])
 
     if options.letter:
         logging.info("getting %s artists" % options.letter)
         artists = [Artist(**a) for a in fetch_letter(options.letter)]
     else:
         logging.info("finding all artists")
-        artists = fetch_all_artists()
+        artists = fetch_all_artists(pool=pool)
 
     logging.info("done. got %d" % len(artists))
 
-    pool = mp.Pool(int(options.pool),
-                   worker_init,
-                   [q])
     logging.info("getting songs and saving to s3")    
     pool.map(_get_and_save_songs, artists)
     logging.info("done")
