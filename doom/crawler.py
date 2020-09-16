@@ -297,6 +297,12 @@ def get_optparser():
                       default=None,
                       help="(optional) where to write artist data")
 
+    parser.add_option("-P",
+                      "--pass",
+                      action="store_true",
+                      dest="no_crawl",
+                      help="(optional) don't actually crawl songs")
+
     return parser
 
 def main():
@@ -331,11 +337,13 @@ def main():
                 orjson.dumps([a.to_dict() for a in artists])
             )
 
-    logging.info("getting songs and saving to s3")
-    if options.recrawl:
+    if options.no_crawl:
+        logging.info("passing! see ya!")
+    elif options.recrawl:
         logging.info("recrawling all artists")
         pool.map(_recrawl_songs, artists)
     else:
+        logging.info("getting songs and saving to s3")
         pool.map(_get_and_save_songs, artists)
 
     logging.info("done")
