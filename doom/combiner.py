@@ -21,7 +21,7 @@ def get_optparser():
                       "--log_level",
                       action="store",
                       dest="log_level",
-                      default="INFO"
+                      default="INFO",
                       help="log level to use")
 
     return parser
