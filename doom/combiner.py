@@ -15,8 +15,23 @@ def list_bucket():
 def read_object(obj):
     return orjson.loads(obj.get()['Body'].read())
 
+def get_optparser()
+    parser = OptionParser(usage="take all the artist data and print to stdout")
+    parser.add_option("-L",
+                      "--log_level",
+                      action="store",
+                      dest="log_level",
+                      default="INFO"
+                      help="log level to use")
+
+    return parser
+
+
 def main():
-    q_listener, q = logger_init(logging.INFO)
+    opt_parser = get_optparser()
+    (options, args) = opt_parser.parse_args()
+
+    q_listener, q = logger_init(options.log_level.upper())
 
     for x in list_bucket():
         print (read_object(x))

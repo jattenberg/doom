@@ -22,6 +22,7 @@ required_libraries = [
     "selenium",
     "orjson==3.3.1",
     "boto3",
+    "s3fs",
 ]
 
 setup(

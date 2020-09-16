@@ -9,6 +9,7 @@ import time
 import warnings
 import orjson
 import boto3
+import s3fs
 
 import lyricsgenius as genius
 import multiprocessing as mp
@@ -26,8 +27,10 @@ genius = genius.Genius(
     timeout=10,
     sleep_time=1
 )
+
 pattern = re.compile("api_path.*?/artists/(\d+)")
 s3_client = boto3.client('s3')
+s3 = s3fs.S3FileSystem()
 lyrics_root = "genius-lyrics"
 
 class Artist():
@@ -214,8 +217,18 @@ def fetch_songs_for_artist(artist):
 
     return artist
 
-def fetch_songs_for_artists(artists):
-    pass
+def _recrawl_songs(a):
+    object_path = "/%s/%s/%s" % (
+        lyrics_root,
+        a.name[0].lower(),
+        "%s.json" % a.name
+    )
+
+    if s3.exists(object_path):
+        logging.debug("already have %s" % a.name)
+    else:
+        logging.info("dont have %s, recrawling" % a.name)
+        _get_and_save_songs(a)
 
 def _get_and_save_songs(a):
     if not a.artist_id:
@@ -244,6 +257,7 @@ def _get_ids(a):
 
 def get_optparser():
     parser = OptionParser(usage="crawl artist and lyrics data from genius.com and store the results to amazon s3")
+
     parser.add_option("-p",
                       "--pool",
                       action="store",
@@ -256,6 +270,25 @@ def get_optparser():
                       dest="letter",
                       default=None,
                       help="(optional) individual artist letter to get")
+    parser.add_option("-r",
+                      "--recrawl",
+                      action="store_true",
+                      dest="recrawl",
+                      help="re-crawl any missing artists")
+
+    parser.add_option("-L",
+                      "--log_level",
+                      action="store",
+                      dest="log_level",
+                      default="INFO",
+                      help="log level to use")
+
+    parser.add_option("-f",
+                      "--file",
+                      action="store",
+                      dest="file",
+                      default=None,
+                      help="use this file of pre-stored artist data")
 
     return parser
 
@@ -263,15 +296,19 @@ def main():
     opt_parser = get_optparser()
     (options, args) = opt_parser.parse_args()
 
-    q_listener, q = logger_init()
-
-    base_dir = "./data"
+    q_listener, q = logger_init(options.log_level.upper())
 
     pool = mp.Pool(int(options.pool),
                    worker_init,
                    [q])
 
-    if options.letter:
+    if options.file:
+        logging.info("restoring artist info from disk: %s" %
+                     options.file)
+        with open(options.file, 'rb') as f:
+            artists = [Artist(**a) for a in orjson.loads(f.read())]
+        logging.info("got %d artists" % len(artists))
+    elif options.letter:
         logging.info("getting %s artists" % options.letter)
         artists = [Artist(**a) for a in fetch_letter(options.letter)]
     else:
@@ -280,8 +317,13 @@ def main():
 
     logging.info("done. got %d" % len(artists))
 
-    logging.info("getting songs and saving to s3")    
-    pool.map(_get_and_save_songs, artists)
+    logging.info("getting songs and saving to s3")
+    if options.recrawl:
+        logging.info("recrawling all artists")
+        pool.map(_recrawl_songs, artists)
+    else:
+        pool.map(_get_and_save_songs, artists)
+
     logging.info("done")
 
     pool.close()

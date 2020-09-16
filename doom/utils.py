@@ -3,7 +3,7 @@ import logging
 import multiprocessing as mp
 from logging.handlers import QueueHandler, QueueListener
 
-def logger_init(level=logging.DEBUG):
+def logger_init(level="DEBUG"):
     # https://stackoverflow.com/questions/641420/how-should-i-log-while-using-multiprocessing-in-python
     q = mp.Queue()
     # this is the handler for all log records
