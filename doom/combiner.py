@@ -2,6 +2,7 @@ import boto3
 import orjson
 import sys
 import logging
+from optparse import OptionParser
 
 from .utils import logger_init, worker_init
 
