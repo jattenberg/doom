@@ -288,7 +288,14 @@ def get_optparser():
                       action="store",
                       dest="file",
                       default=None,
-                      help="use this file of pre-stored artist data")
+                      help="(optional) use this file of pre-stored artist data")
+
+    parser.add_option("-o",
+                      "--out",
+                      action="store",
+                      dest="out",
+                      default=None,
+                      help="(optional) where to write artist data")
 
     return parser
 
@@ -316,6 +323,13 @@ def main():
         artists = fetch_all_artists(pool=pool)
 
     logging.info("done. got %d" % len(artists))
+
+    if options.out:
+        logging.info("writing artist data to %s" % options.out)
+        with open(options.out, 'wb') as f:
+            f.write(
+                orjson.dumps([a.to_dict() for a in artists])
+            )
 
     logging.info("getting songs and saving to s3")
     if options.recrawl:
