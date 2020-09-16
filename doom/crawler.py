@@ -18,7 +18,8 @@ from optparse import OptionParser
 from selenium import webdriver
 from bs4.element import Tag
 from bs4 import BeautifulSoup
-from logging.handlers import QueueHandler, QueueListener
+
+from .utils import logger_init, worker_init
 
 genius = genius.Genius(
     os.environ.get("GENIUS_ACCESS_TOKEN"),
@@ -240,33 +241,6 @@ def _get_and_save_songs(a):
 
 def _get_ids(a):
     return a.get_artist_id()
-
-def logger_init():
-    # https://stackoverflow.com/questions/641420/how-should-i-log-while-using-multiprocessing-in-python
-    q = mp.Queue()
-    # this is the handler for all log records
-    handler = logging.StreamHandler(stream=sys.stdout)
-    handler.setFormatter(
-        logging.Formatter("%(levelname)s: %(asctime)s - %(process)s - %(message)s")
-    )
-
-    # ql gets records from the queue and sends them to the handler
-    ql = QueueListener(q, handler)
-    ql.start()
-
-    logger = logging.getLogger()
-    logger.setLevel(logging.DEBUG)
-    # add the handler to the logger so records from this process are handled
-    logger.addHandler(handler)
-
-    return ql, q
-
-def worker_init(q):
-    # all records from worker processes go to qh and then into q
-    qh = QueueHandler(q)
-    logger = logging.getLogger()
-    logger.setLevel(logging.DEBUG)
-    logger.addHandler(qh)
 
 def get_optparser():
     parser = OptionParser(usage="crawl artist and lyrics data from genius.com and store the results to amazon s3")
