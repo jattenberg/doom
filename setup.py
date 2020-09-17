@@ -21,7 +21,8 @@ required_libraries = [
     "numpy==1.18.5",
     "selenium",
     "orjson==3.3.1",
-    "boto3",
+    "boto3==1.14.44",
+    "botocore==1.17.44",
     "s3fs",
 ]
 
