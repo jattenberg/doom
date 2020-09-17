@@ -14,7 +14,7 @@ def list_bucket():
     return bucket.objects.all()
 
 def read_object(obj):
-    return orjson.loads(obj.get()['Body'].read())
+    return obj.get()['Body'].read().decode('utf-8')
 
 def get_optparser():
     parser = OptionParser(usage="take all the artist data and print to stdout")
