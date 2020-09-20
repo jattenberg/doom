@@ -114,7 +114,7 @@ def dataset_preparation(corpus, tokenizer=Tokenizer()):
 
 def get_optparser():
     parser = OptionParser(
-        usage"gather line-delimited gzipped json data and gather lyric lines"
+        usage="gather line-delimited gzipped json data and gather lyric lines"
     )
 
     parser.add_option("-i",
