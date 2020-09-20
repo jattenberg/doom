@@ -2,11 +2,12 @@ import logging
 import gzip
 import orjson
 import functools
+import itertools
 import pickle
 
+import multiprocessing as mp
 import numpy as np
 import keras.utils as ku 
-import multiprocessing as mp
 
 from optparse import OptionParser
 from keras.preprocessing.text import Tokenizer
@@ -48,10 +49,8 @@ def artist_to_lines(artist):
     """
     logging.debug("reading songs for %s" % artist['name'])
     if 'songs' in artist and artist['songs']:
-        return functools.reduce(
-            lambda acc, x: acc + song_to_lines(x),
-            artist['songs'],
-            []
+        return itertools.chain.from_iterable(
+            [song_to_lines(x) for x in artist['songs']]
         )
     else:
         return []
@@ -62,10 +61,8 @@ def artist_file_to_lines(path,
     turns a collection of artist data into a list of song
     lines.
     """
-    return functools.reduce(
-        lambda acc, x: acc + x,
-        pool.map(artist_to_lines, read_file(path)),
-        []
+    return itertools.chain.from_iterable(
+        [artist_to_lines(x) for x in read_file(path)],        
     )
 
 def read_songs(path):
