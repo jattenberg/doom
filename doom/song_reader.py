@@ -8,6 +8,7 @@ import numpy as np
 import keras.utils as ku 
 import multiprocessing as mp
 
+from optparse import OptionParser
 from keras.preprocessing.text import Tokenizer
 from keras.preprocessing.sequence import pad_sequences
 
@@ -110,3 +111,62 @@ def dataset_preparation(corpus, tokenizer=Tokenizer()):
     label = ku.to_categorical(label, num_classes=total_words)
     
     return predictors, label, max_sequence_len, total_words
+
+def get_optparser():
+    parser = OptionParser(
+        usage"gather line-delimited gzipped json data and gather lyric lines"
+    )
+
+    parser.add_option("-i",
+                      "--input",
+                      action="store",
+                      dest="input",
+                      default="all_lyrics.json.gz",
+                      help="location of the artist data to read")
+
+    parser.add_option("-o",
+                      "--output",
+                      action="store",
+                      dest="output",
+                      default="lyrics.pkl",
+                      help="location to store pickled lyric lines")
+
+    parser.add_option("-L",
+                      "--log_level",
+                      action="store",
+                      dest="log_level",
+                      default="INFO",
+                      help="log level to use")
+
+    parser.add_option("-p",
+                      "--pool",
+                      action="store",
+                      dest="pool",
+                      default=mp.cpu_count(),
+                      help="size of pool of workers")
+
+    return parser
+
+def main():
+    opt_parser = get_optparser()
+    (options, args) = opt_parser.parse_args()
+
+    q_listener, q = logger_init(options.log_level.upper())
+
+    pool = mp.Pool(int(options.pool),
+                   worker_init,
+                   [q])
+
+    logging.info("reading songs from %s" % options.input)
+
+    lyrics = artist_file_to_lines(
+        options.input,
+        pool
+    )
+
+    logging.info("writing songs to %s" % options.output)
+
+    write_songs(lyrics, options.output)
+
+if __name__ == "__main__":
+    main()
