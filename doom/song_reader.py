@@ -45,6 +45,7 @@ def artist_to_lines(artist):
           thinking no for now since most artists
           have a small number of songs
     """
+    logging.debug("reading songs for %s" % artist['name'])
     if 'songs' in artist and artist['songs']:
         return functools.reduce(
             lambda acc, x: acc + song_to_lines(x),
