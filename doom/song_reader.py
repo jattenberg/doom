@@ -5,7 +5,6 @@ import functools
 import itertools
 import pickle
 
-import multiprocessing as mp
 import numpy as np
 import keras.utils as ku 
 
@@ -55,14 +54,17 @@ def artist_to_lines(artist):
     else:
         return []
 
-def artist_file_to_lines(path,
-                         pool=mp.Pool(mp.cpu_count())):
+def artist_file_to_lines(path):
     """
     turns a collection of artist data into a list of song
     lines.
     """
-    return itertools.chain.from_iterable(
-        [artist_to_lines(x) for x in read_file(path)],        
+    
+
+    return list(
+        itertools.chain.from_iterable(
+            [artist_to_lines(x) for x in read_file(path)]
+        )
     )
 
 def read_songs(path):
@@ -135,13 +137,6 @@ def get_optparser():
                       default="INFO",
                       help="log level to use")
 
-    parser.add_option("-p",
-                      "--pool",
-                      action="store",
-                      dest="pool",
-                      default=mp.cpu_count(),
-                      help="size of pool of workers")
-
     return parser
 
 def main():
@@ -150,20 +145,15 @@ def main():
 
     q_listener, q = logger_init(options.log_level.upper())
 
-    pool = mp.Pool(int(options.pool),
-                   worker_init,
-                   [q])
-
     logging.info("reading songs from %s" % options.input)
 
     lyrics = artist_file_to_lines(
-        options.input,
-        pool
+        options.input
     )
 
     logging.info("writing songs to %s" % options.output)
 
-    write_songs(lyrics, options.output)
+    write_songs(list(lyrics), options.output)
 
 if __name__ == "__main__":
     main()
