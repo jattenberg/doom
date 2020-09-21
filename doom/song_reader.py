@@ -32,7 +32,8 @@ def read_file(path):
             yield orjson.loads(line)
 
 def song_to_lines(song,
-                  min_lines=10):
+                  min_lines=20,
+                  acceptable_languages=['en']):
     """
     takes a song and returns an array where
     each line is an element
@@ -44,7 +45,7 @@ def song_to_lines(song,
                 song['lyrics']
             )
             if lang_prediction.is_reliable\
-               and lang_prediction.language == 'en':
+               and lang_prediction.language in acceptable_languages:
                 return lines
             else:
                 return []
