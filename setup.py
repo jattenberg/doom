@@ -24,6 +24,8 @@ required_libraries = [
     "boto3==1.14.44",
     "botocore==1.17.44",
     "s3fs",
+    "tqdm",
+    "pycld3",
 ]
 
 setup(
