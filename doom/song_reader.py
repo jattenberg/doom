@@ -40,7 +40,7 @@ def song_to_lines(song,
     if 'lyrics' in song and song['lyrics']:
         lines = song['lyrics'].lower().split("\n")
         if len(lines) >= min_lines:
-            lang_prediction = cld3.detect(
+            lang_prediction = cld3.get_language(
                 song['lyrics']
             )
             if lang_prediction.is_reliable\
