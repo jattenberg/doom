@@ -49,7 +49,7 @@ def artist_to_lines(artist):
     logging.debug("reading songs for %s" % artist['name'])
     if 'songs' in artist and artist['songs']:
         return itertools.chain.from_iterable(
-            [song_to_lines(x) for x in artist['songs']]
+            map(song_to_lines, artist['songs'])
         )
     else:
         return []
@@ -63,7 +63,7 @@ def artist_file_to_lines(path):
 
     return list(
         itertools.chain.from_iterable(
-            [artist_to_lines(x) for x in read_file(path)]
+            map(artist_to_lines, read_file(path))
         )
     )
 
