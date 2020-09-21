@@ -70,7 +70,7 @@ def read_songs(path):
     reads song data from a pickle file
     """
     return pickle.load(
-        open(path, "rb" )
+        gzip.open(path, "rb" )
     )
 
 def write_songs(song_data, path):
@@ -79,7 +79,7 @@ def write_songs(song_data, path):
     """
     pickle.dump(
         song_data,
-        open(path, "wb")
+        gzip.open(path, "wb")
     )
 
 def dataset_preparation(corpus, tokenizer=Tokenizer()):
