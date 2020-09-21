@@ -61,10 +61,8 @@ def artist_file_to_lines(path):
     """
     
 
-    return list(
-        itertools.chain.from_iterable(
-            map(artist_to_lines, read_file(path))
-        )
+    return itertools.chain.from_iterable(
+        map(artist_to_lines, read_file(path))
     )
 
 def read_songs(path):
@@ -147,13 +145,17 @@ def main():
 
     logging.info("reading songs from %s" % options.input)
 
-    lyrics = artist_file_to_lines(
-        options.input
+    lyrics = list(
+        artist_file_to_lines(
+            options.input
+        )
     )
 
     logging.info("writing songs to %s" % options.output)
 
-    write_songs(list(lyrics), options.output)
+    logging.info("got %d lines" % len(lyrics))
+
+    write_songs(lyrics, options.output)
 
 if __name__ == "__main__":
     main()
