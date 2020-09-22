@@ -9,6 +9,7 @@ import re
 
 import numpy as np
 import keras.utils as ku 
+import multiprocessing as mp
 
 from tqdm import tqdm 
 from optparse import OptionParser
@@ -75,7 +76,7 @@ def artist_to_lines(artist,
     else:
         return []
 
-def artist_file_to_lines(path):
+def artist_file_to_lines(path, pool):
     """
     turns a collection of artist data into a list of song
     lines.
@@ -83,7 +84,7 @@ def artist_file_to_lines(path):
     
     return itertools.chain.from_iterable(
         tqdm(
-            map(artist_to_lines, read_file(path))
+            pool.imap_unordered(artist_to_lines, read_file(path))
         )
     )
 
@@ -192,19 +193,20 @@ def line_to_features(line,
 
 def artist_file_to_dataset(path,
                            passes=100,
+                           pool=mp.Pool(mp.cpu_count()),
                            splitter=basic_splitter,
                            tokenizer=HashingVectorizer(n_features=2**16,
                                                        decode_error='ignore',
                                                        strip_accents='unicode')):
     
     max_seq_len, total_words = hashing_document_statistics(
-        artist_file_to_lines(path),
+        artist_file_to_lines(path, pool),
         splitter,
         tokenizer
     )
 
     for iter in range(passes):
-        for line in artist_file_to_lines(path):
+        for line in artist_file_to_lines(path, pool):
             yield line_to_features(line,
                                    max_seq_len,
                                    total_words,
@@ -238,6 +240,13 @@ def get_optparser():
                       default="INFO",
                       help="log level to use")
 
+    parser.add_option("-p",
+                      "--pool",
+                      action="store",
+                      dest="pool",
+                      default=mp.cpu_count(),
+                      help="size of pool of workers for parallel execution")
+
     return parser
 
 def main():
@@ -246,9 +255,13 @@ def main():
 
     q_listener, q = logger_init(options.log_level.upper())
 
+    pool = mp.Pool(int(options.pool),
+                   worker_init,
+                   [q])
+
     logging.info("reading songs from %s" % options.input)
 
-    d = list(artist_file_to_dataset(options.input, 1))
+    d = list(artist_file_to_dataset(options.input, 1, pool))
     write_songs(d, options.output)
 
 if __name__ == "__main__":
