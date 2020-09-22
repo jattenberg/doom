@@ -5,6 +5,7 @@ import functools
 import itertools
 import pickle
 import cld3
+import re
 
 import numpy as np
 import keras.utils as ku 
@@ -13,6 +14,7 @@ from tqdm import tqdm
 from optparse import OptionParser
 from keras.preprocessing.text import Tokenizer
 from keras.preprocessing.sequence import pad_sequences
+from sklearn.feature_extraction.text import HashingVectorizer
 
 from .utils import logger_init, worker_init
 
@@ -135,6 +137,67 @@ def dataset_preparation(corpus, tokenizer=Tokenizer()):
     label = ku.to_categorical(label, num_classes=total_words)
     
     return predictors, label, max_sequence_len, total_words, tokenizer
+
+def basic_splitter(line):
+    return re.split(r'\s+', line)
+
+def hash_to_sequence(line,
+                     splitter=basic_splitter,
+                     tokenizer=HashingVectorizer(n_features=2**16,
+                                                 decode_error='ignore',
+                                                 strip_accents='unicode')):
+    tokens = splitter(line)
+    return tokenizer.transform([tokens]).nonzero()[1].tolist() # columns
+
+def hashing_document_statistics(corpus,
+                                splitter=basic_splitter,
+                                tokenizer=HashingVectorizer(n_features=2**16,
+                                                            decode_error='ignore',
+                                                            strip_accents='unicode')):
+
+    def accum_stats(stats, line):
+        tokens = hash_to_sequence(line,
+                                  splitter,
+                                  tokenizer)
+
+        length = len(tokens)
+        largest = max(tokens)
+
+        return (max(length, stats[0]), max(largest, stats[1]))
+
+    return functools.reduce(
+        accum_stats,
+        corpus,
+        (0, 0)
+    )
+
+def dataset_generator(corpus,
+                      max_sequence_len,
+                      total_words,
+                      splitter=basic_splitter,
+                      tokenizer=HashingVectorizer(n_features=2**16,
+                                                  decode_error='ignore',
+                                                  strip_accents='unicode')):
+    """
+    corpus are the lines in a song
+
+    builds dataset necessary for next word prediction tasks,
+    including fitting the tokenizer and creating necessary
+    statistics: max sequence length and total word count
+    """
+
+    for line in tqdm(corpus):
+        token_list = hash_to_sequence(line,
+                                      splitter,
+                                      tokenizer)
+
+        input_sequences = [token_list[:i+1] for i in range(1, len(token_list))]
+        for seq in np.array(pad_sequences(
+                input_sequences,
+                maxlen=max_sequence_length,
+                padding='pre')):
+            yield (seq[:-1], ku.to_categorical(seq[-1], num_classes=total_words))
+
 
 def get_optparser():
     parser = OptionParser(
