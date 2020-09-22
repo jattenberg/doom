@@ -147,7 +147,7 @@ def hash_to_sequence(line,
                                                  decode_error='ignore',
                                                  strip_accents='unicode')):
     tokens = splitter(line)
-    return tokenizer.transform([tokens]).nonzero()[1].tolist() # columns
+    return tokenizer.transform(tokens).nonzero()[1].tolist() # columns
 
 def hashing_document_statistics(corpus,
                                 splitter=basic_splitter,
@@ -160,8 +160,8 @@ def hashing_document_statistics(corpus,
                                   splitter,
                                   tokenizer)
 
-        length = len(tokens)
-        largest = max(tokens)
+        length = len(tokens) if tokens else 0
+        largest = max(tokens) if tokens else 0
 
         return (max(length, stats[0]), max(largest, stats[1]))
 
@@ -171,6 +171,24 @@ def hashing_document_statistics(corpus,
         (0, 0)
     )
 
+def line_to_features(line,
+                     max_sequence_len,
+                     total_words,
+                     splitter=basic_splitter,
+                     tokenizer=HashingVectorizer(n_features=2**16,
+                                                 decode_error='ignore',
+                                                 strip_accents='unicode')):
+    token_list = hash_to_sequence(line,
+                                  splitter,
+                                  tokenizer)
+
+    input_sequences = [token_list[:i+1] for i in range(1, len(token_list))]
+    for seq in np.array(pad_sequences(
+            input_sequences,
+            maxlen=max_sequence_length,
+            padding='pre')):
+        yield (seq[:-1], ku.to_categorical(seq[-1], num_classes=total_words))
+
 def dataset_generator(corpus,
                       max_sequence_len,
                       total_words,
@@ -178,25 +196,36 @@ def dataset_generator(corpus,
                       tokenizer=HashingVectorizer(n_features=2**16,
                                                   decode_error='ignore',
                                                   strip_accents='unicode')):
-    """
-    corpus are the lines in a song
-
-    builds dataset necessary for next word prediction tasks,
-    including fitting the tokenizer and creating necessary
-    statistics: max sequence length and total word count
-    """
 
     for line in tqdm(corpus):
-        token_list = hash_to_sequence(line,
-                                      splitter,
-                                      tokenizer)
+        return line_to_feature(line,
+                               max_sequence_len,
+                               total_words,
+                               tokenizer)
 
-        input_sequences = [token_list[:i+1] for i in range(1, len(token_list))]
-        for seq in np.array(pad_sequences(
-                input_sequences,
-                maxlen=max_sequence_length,
-                padding='pre')):
-            yield (seq[:-1], ku.to_categorical(seq[-1], num_classes=total_words))
+
+def artist_file_to_dataset(path,
+                           passes=100):
+
+    def extract_songs(artist_data):
+        for artist in tqdm(artist_data):
+            if 'songs' in artist\
+               and len(artist['songs']) >= min_songs:
+                for song in artist['songs']:
+                    if 'lyrics' in song\
+                       and song['lyrics']:
+                        lines = song['lyrics'].lower().split("\n")
+                        if len(lines) >= min_lines:
+                            for line in lines:
+                                yield line
+
+    max_seq_len, total_words = hashing_document_statistics(
+        extract_songs(read_file(path))
+    )
+
+    for iter in passes:
+        for line in tqdm(extract_songs(read_file(path))):
+            yield line_to_features(line)
 
 
 def get_optparser():
@@ -235,6 +264,12 @@ def main():
 
     logging.info("reading songs from %s" % options.input)
 
+    for d in artist_file_to_dataset(options.input):
+        print (d)
+        break
+
+    return
+    """
     lyrics = list(
         artist_file_to_lines(
             options.input
@@ -246,6 +281,7 @@ def main():
     logging.info("got %d lines" % len(lyrics))
 
     write_songs(lyrics, options.output)
+    """
 
 if __name__ == "__main__":
     main()
