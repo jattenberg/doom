@@ -191,8 +191,6 @@ def line_to_features(line,
 
 
 def artist_file_to_dataset(path,
-                           max_sequence_len,
-                           total_words,
                            passes=100,
                            splitter=basic_splitter,
                            tokenizer=HashingVectorizer(n_features=2**16,
