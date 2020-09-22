@@ -54,7 +54,8 @@ def song_to_lines(song,
     else:
         return []
 
-def artist_to_lines(artist):
+def artist_to_lines(artist,
+                    min_songs=10):
     """
     turns an artist into a list of song lines
     todo: make this a parallel process?
@@ -63,9 +64,12 @@ def artist_to_lines(artist):
     """
     logging.debug("reading songs for %s" % artist['name'])
     if 'songs' in artist and artist['songs']:
-        return itertools.chain.from_iterable(
-            map(song_to_lines, artist['songs'])
-        )
+        if len(artist['songs']) >= min_songs:
+            return itertools.chain.from_iterable(
+                map(song_to_lines, artist['songs'])
+            )
+        else:
+            return []
     else:
         return []
 
