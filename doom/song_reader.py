@@ -248,7 +248,7 @@ def main():
 
     logging.info("reading songs from %s" % options.input)
 
-    d = list(artist_file_to_dataset(options.input), 1)
+    d = list(artist_file_to_dataset(options.input, 1))
     write_songs(d, options.output)
 
 if __name__ == "__main__":
