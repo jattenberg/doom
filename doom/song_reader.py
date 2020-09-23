@@ -183,12 +183,16 @@ def line_to_features(line,
                                   splitter,
                                   tokenizer)
 
-    input_sequences = [token_list[:i+1] for i in range(1, len(token_list))]
-    for seq in np.array(pad_sequences(
-            input_sequences,
-            maxlen=max_sequence_length,
-            padding='pre')):
-        yield (seq[:-1], ku.to_categorical(seq[-1], num_classes=total_words))
+    if token_list:
+        input_sequences = [token_list[:i+1] for i in range(1, len(token_list))]
+        for seq in np.array(
+                pad_sequences(
+                    input_sequences,
+                    maxlen=max_sequence_length,
+                    padding='pre')):
+            yield (seq[:-1],
+                   ku.to_categorical(seq[-1],
+                                     num_classes=total_words))
 
 
 def artist_file_to_dataset(path,
