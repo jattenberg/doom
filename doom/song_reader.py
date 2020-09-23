@@ -265,8 +265,33 @@ def main():
 
     logging.info("reading songs from %s" % options.input)
 
-    d = list(artist_file_to_dataset(options.input, 1, pool))
-    write_songs(d, options.output)
+    path = options.input
+    splitter = basic_splitter
+    tokenizer = HashingVectorizer(n_features=2**16,
+                                  decode_error='ignore',
+                                  strip_accents='unicode')
+
+    max_seq_len, total_words = hashing_document_statistics(
+        artist_file_to_lines(path, pool),
+        splitter,
+        tokenizer
+    )
+
+    logging.info("got %d total words, longest seq is %d" %
+                 (total_words, max_seq_len))
+
+    seqs = [hash_to_sequence(line,
+                             splitter,
+                             tokenizer)\
+            for line in artist_file_to_lines(path, pool)]
+
+    output = {
+        "seqs": seqs,
+        "max_seq_len": max_seq_len,
+        "total_words": total_words
+    }
+    logging.info("writing %d lines to %s" % (len(output), options.output)
+    write_songs(output, options.output)
 
 if __name__ == "__main__":
     main()
