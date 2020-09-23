@@ -150,16 +150,9 @@ def hash_to_sequence(line,
     tokens = splitter(line)
     return tokenizer.transform(tokens).nonzero()[1].tolist() # columns
 
-def hashing_document_statistics(corpus,
-                                splitter=basic_splitter,
-                                tokenizer=HashingVectorizer(n_features=2**16,
-                                                            decode_error='ignore',
-                                                            strip_accents='unicode')):
+def document_statistics(token_sequence):
 
-    def accum_stats(stats, line):
-        tokens = hash_to_sequence(line,
-                                  splitter,
-                                  tokenizer)
+    def accum_stats(stats, tokens):
 
         length = len(tokens) if tokens else 0
         largest = max(tokens) if tokens else 0
@@ -193,30 +186,6 @@ def line_to_features(line,
             yield (seq[:-1],
                    ku.to_categorical(seq[-1],
                                      num_classes=total_words))
-
-
-def artist_file_to_dataset(path,
-                           passes=100,
-                           pool=mp.Pool(mp.cpu_count()),
-                           splitter=basic_splitter,
-                           tokenizer=HashingVectorizer(n_features=2**16,
-                                                       decode_error='ignore',
-                                                       strip_accents='unicode')):
-    
-    max_seq_len, total_words = hashing_document_statistics(
-        artist_file_to_lines(path, pool),
-        splitter,
-        tokenizer
-    )
-
-    for iter in range(passes):
-        for line in artist_file_to_lines(path, pool):
-            yield line_to_features(line,
-                                   max_seq_len,
-                                   total_words,
-                                   splitter,
-                                   tokenizer)
-
 
 def get_optparser():
     parser = OptionParser(
@@ -270,26 +239,23 @@ def main():
     tokenizer = HashingVectorizer(n_features=2**16,
                                   decode_error='ignore',
                                   strip_accents='unicode')
-
-    max_seq_len, total_words = hashing_document_statistics(
-        artist_file_to_lines(path, pool),
-        splitter,
-        tokenizer
-    )
-
-    logging.info("got %d total words, longest seq is %d" %
-                 (total_words, max_seq_len))
-
     seqs = [hash_to_sequence(line,
                              splitter,
                              tokenizer)\
             for line in artist_file_to_lines(path, pool)]
+
+    max_seq_len, total_words = document_statistics(seqs)
+
+    logging.info("got %d total words, longest seq is %d" %
+                 (total_words, max_seq_len))
+
 
     output = {
         "seqs": seqs,
         "max_seq_len": max_seq_len,
         "total_words": total_words
     }
+
     logging.info("writing %d lines to %s" % (len(output), options.output))
     write_songs(output, options.output)
 
