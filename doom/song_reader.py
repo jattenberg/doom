@@ -29,10 +29,13 @@ def read_file(path):
     a generator for processing line-delimited json
     one line at a time
     """
+    seen = set()
     logging.info("opening %s" % path)
     with gzip.open(path, 'rb') as f:
         for line in f:
-            yield orjson.loads(line)
+            if line not in seen:
+                yield orjson.loads(line)
+                seen.add(line)
 
 def song_to_lines(song,
                   min_lines=20,
