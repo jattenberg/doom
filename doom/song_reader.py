@@ -174,7 +174,7 @@ def document_statistics(token_sequence):
 
     return functools.reduce(
         accum_stats,
-        corpus,
+        tqdm(corpus),
         (0, 0)
     )
 
@@ -256,6 +256,9 @@ def main():
                              splitter,
                              tokenizer)\
             for line in artist_file_to_lines(path, pool)]
+
+    logging.info("done, got %d, computing aggregate stats" %
+                 len(seqs))
 
     max_seq_len, total_words = document_statistics(seqs)
 
