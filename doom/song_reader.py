@@ -65,7 +65,8 @@ def artist_to_lines(artist,
           thinking no for now since most artists
           have a small number of songs
     """
-    logging.debug("reading songs for %s" % artist['name'])
+    logging.debug("reading songs for %s (%s)" %
+                  (artist['name'], artist['artist_id']))
     if 'songs' in artist and artist['songs']:
         if len(artist['songs']) >= min_songs:
             return itertools.chain.from_iterable(
