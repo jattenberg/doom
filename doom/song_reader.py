@@ -77,6 +77,13 @@ def artist_to_lines(artist,
     else:
         return []
 
+def unique_artist_filter(artists):
+    seen = set()
+    for artist in artists:
+        if artist['artist_id'] not in seen:
+            seen.add(artist['artist_id'])
+            yield artist
+
 def artist_file_to_lines(path, pool):
     """
     turns a collection of artist data into a list of song
@@ -85,7 +92,12 @@ def artist_file_to_lines(path, pool):
     
     return itertools.chain.from_iterable(
         tqdm(
-            pool.imap_unordered(artist_to_lines, read_file(path))
+            pool.imap_unordered(
+                artist_to_lines,
+                unique_artist_filter(
+                    read_file(path)
+                )
+            )
         )
     )
 
