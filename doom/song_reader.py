@@ -290,7 +290,7 @@ def main():
         "max_seq_len": max_seq_len,
         "total_words": total_words
     }
-    logging.info("writing %d lines to %s" % (len(output), options.output)
+    logging.info("writing %d lines to %s" % (len(output), options.output))
     write_songs(output, options.output)
 
 if __name__ == "__main__":
