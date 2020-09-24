@@ -174,7 +174,7 @@ def document_statistics(token_sequence):
 
     return functools.reduce(
         accum_stats,
-        tqdm(corpus),
+        tqdm(token_sequence),
         (0, 0)
     )
 
