@@ -141,7 +141,8 @@ def fetch_all_letters(
     artist_list = functools.reduce(
         lambda acc, x: acc + x,
         pool.imap_unordered(fetch_letter, letters),
-        [])
+        []
+    )
 
     logging.info(">>>fetched all artists! %d total<<<"
                  % len(artist_list))
