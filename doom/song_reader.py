@@ -155,20 +155,20 @@ def dataset_preparation(corpus, tokenizer=Tokenizer()):
 def basic_splitter(line):
     return re.split(r'\s+', line)
 
-def hash_to_sequence_er(splitter=basic_splitter,
-                       tokenizer=HashingVectorizer(n_features=2**16,
-                                                   decode_error='ignore',
-                                                   strip_accents='unicode')):
-    """
-    was trying to use currying to supply a function to an imap
-    didnt work yet
-    """
-    def _hash_to_sequence(line):
-        tokens = splitter(line)
-        return tokenizer.transform(tokens).nonzero()[1].tolist() # columns
+class hash_to_sequence_er():
+    def __init__(self,
+                 splitter=basic_splitter,
+                 tokenizer=HashingVectorizer(n_features=2**16,
+                                             decode_error='ignore',
+                                             strip_accents='unicode')):
+        self.splitter = splitter
+        self.tokenizer = tokenizer
 
-    return _hash_to_sequence
+    def __call__(self, line):
+        tokens = self.splitter(line)
+        return self.tokenizer.transform(tokens).nonzero()[1].tolist() # columns
 
+    
 def hash_to_sequence(line,
                      splitter=basic_splitter,
                      tokenizer=HashingVectorizer(n_features=2**16,
@@ -268,7 +268,7 @@ def main():
                                   strip_accents='unicode')
     seqs = list(
         pool.imap_unordered(
-            hash_to_sequence,
+            hash_to_sequence_er(splitter, tokenizer),
             artist_file_to_lines(path, pool)
         )
     )
