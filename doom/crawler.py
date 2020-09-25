@@ -140,7 +140,7 @@ def fetch_all_letters(
 
     artist_list = functools.reduce(
         lambda acc, x: acc + x,
-        pool.map(fetch_letter, letters),
+        pool.imap_unordered(fetch_letter, letters),
         [])
 
     logging.info(">>>fetched all artists! %d total<<<"
@@ -341,10 +341,10 @@ def main():
         logging.info("passing! see ya!")
     elif options.recrawl:
         logging.info("recrawling all artists")
-        pool.map(_recrawl_songs, artists)
+        pool.imap_unordered(_recrawl_songs, artists)
     else:
         logging.info("getting songs and saving to s3")
-        pool.map(_get_and_save_songs, artists)
+        pool.imap_unordered(_get_and_save_songs, artists)
 
     logging.info("done")
 
