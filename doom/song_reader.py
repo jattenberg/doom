@@ -288,8 +288,12 @@ def main():
         "total_words": total_words
     }
 
-    logging.info("writing %d lines to %s" % (len(output), options.output))
-    write_songs(output, options.output)
+    with gzip.open(options.output, 'wb') as f:
+        logging.info("writing %d lines to %s" % (len(output), options.output))
+        f.write(
+            orjson.dumps(output)
+        )
+        logging.info("done")
 
 if __name__ == "__main__":
     main()
