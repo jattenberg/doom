@@ -214,6 +214,28 @@ def line_to_features(line,
                    ku.to_categorical(seq[-1],
                                      num_classes=total_words))
 
+def get_padded_seqs(seqs,
+                    max_seq_len,
+                    total_words):
+
+    print ("max seq len: %s, total words: %s" % (max_seq_len, total_words))
+    for seq in seqs:
+        if seq:
+            input_sequences = [seq[:i+1] for i in range(1, len(seq))]
+            for padded in np.array(
+                    pad_sequences(
+                        input_sequences,
+                        maxlen = max_seq_len,
+                        padding = 'pre')
+                    ):
+                yield (padded[:-1],
+                       ku.to_categorical(padded[-1],
+                                         num_classes = total_words))
+
+def get_padded_seqs_from_file(filename):
+    with gzip.open(filename) as f:
+        return get_padded_seqs(**orjson.loads(f.read()))
+            
 def get_optparser():
     parser = OptionParser(
         usage="gather line-delimited gzipped json data and gather lyric lines"
@@ -249,6 +271,8 @@ def get_optparser():
 
     return parser
 
+
+
 def main():
     opt_parser = get_optparser()
     (options, args) = opt_parser.parse_args()
@@ -281,7 +305,6 @@ def main():
     logging.info("got %d total words, longest seq is %d" %
                  (total_words, max_seq_len))
 
-
     output = {
         "seqs": seqs,
         "max_seq_len": max_seq_len,
@@ -297,3 +320,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
