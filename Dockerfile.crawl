@@ -1,0 +1,10 @@
+FROM jupyter/scipy-notebook:latest
+
+# create working directlry
+WORKDIR /app
+
+# copy
+COPY . .
+RUN pip install .
+
+CMD ["python", "-m", "doom.crawler", "-L", "DEBUG"]
