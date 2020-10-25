@@ -7,23 +7,28 @@ from optparse import OptionParser
 from .utils import logger_init, worker_init
 
 lyrics_root = "genius-lyrics"
-s3 = boto3.resource('s3')
+s3 = boto3.resource("s3")
+
 
 def list_bucket():
     bucket = s3.Bucket(lyrics_root)
     return bucket.objects.all()
 
+
 def read_object(obj):
-    return obj.get()['Body'].read().decode('utf-8')
+    return obj.get()["Body"].read().decode("utf-8")
+
 
 def get_optparser():
     parser = OptionParser(usage="take all the artist data and print to stdout")
-    parser.add_option("-L",
-                      "--log_level",
-                      action="store",
-                      dest="log_level",
-                      default="INFO",
-                      help="log level to use")
+    parser.add_option(
+        "-L",
+        "--log_level",
+        action="store",
+        dest="log_level",
+        default="INFO",
+        help="log level to use",
+    )
 
     return parser
 
@@ -35,7 +40,8 @@ def main():
     q_listener, q = logger_init(options.log_level.upper())
 
     for x in list_bucket():
-        print (read_object(x))
+        print(read_object(x))
+
 
 if __name__ == "__main__":
     main()

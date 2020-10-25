@@ -3,6 +3,7 @@ import logging
 import multiprocessing as mp
 from logging.handlers import QueueHandler, QueueListener
 
+
 def logger_init(level="DEBUG"):
     # https://stackoverflow.com/questions/641420/how-should-i-log-while-using-multiprocessing-in-python
     q = mp.Queue()
@@ -22,6 +23,7 @@ def logger_init(level="DEBUG"):
     logger.addHandler(handler)
 
     return ql, q
+
 
 def worker_init(q):
     # all records from worker processes go to qh and then into q
