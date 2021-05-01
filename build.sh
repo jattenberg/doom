@@ -12,6 +12,8 @@ fi
 
 virtualenv $venv
 
+echo "upgrading pip" 
+$venv/bin/python -m pip install --upgrade pip
 echo "installing doom"
 $venv/bin/pip install -e .
 
