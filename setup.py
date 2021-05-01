@@ -26,6 +26,7 @@ required_libraries = [
     "s3fs",
     "tqdm",
     "pycld3",
+    "phyme"
 ]
 
 setup(
