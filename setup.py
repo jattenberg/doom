@@ -18,7 +18,7 @@ required_libraries = [
     "keras",
     "tensorflow",
     "scipy==1.4.1",
-    "numpy==1.18.5",
+    "numpy==1.22.0",
     "selenium",
     "orjson==3.3.1",
     "boto3==1.14.44",
