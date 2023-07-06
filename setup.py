@@ -17,7 +17,7 @@ required_libraries = [
     "pyngrok",
     "keras",
     "tensorflow",
-    "scipy==1.4.1",
+    "scipy==1.10.0",
     "numpy==1.18.5",
     "selenium",
     "orjson==3.3.1",
